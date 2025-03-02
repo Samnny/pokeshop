@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 from DAOs.ClienteDAO import ClienteDAO
 from DAOs.VendaDAO import VendaDAO
@@ -29,6 +30,8 @@ class InterfaceEcommerce:
             print("3 - Listar Pokémons")
             print("4 - Ver Carrinho")
             print("5 - Finalizar Compra")
+            print("6 - Feed de Publicações")
+            print("7 - Publicar Novo Conteúdo")
             print("0 - Sair")
             print("========================")
             opcao = input("Escolha uma opção: ")
@@ -43,6 +46,10 @@ class InterfaceEcommerce:
                 self.ver_carrinho()
             elif opcao == "5":
                 self.finalizar_compra()
+            elif opcao == "6":
+                self.exibir_feed_publicacoes()
+            elif opcao == "7":
+                self.adicionar_publicacao_menu()
             elif opcao == "0":
                 print("Saindo...")
                 break
@@ -62,10 +69,11 @@ class InterfaceEcommerce:
             print("Cliente não encontrado ou senha incorreta.")
 
     def cadastrar_cliente(self):
+        id = uuid.uuid4().int % (2**31 - 1)
         nome = input("Digite seu nome: ")
         cpf = input("Digite seu CPF: ")
         endereco = input("Digite seu endereço: ")
-        sucesso = self.cliente_dao.inserir(nome, cpf, endereco)
+        sucesso = self.cliente_dao.inserir(id, nome, cpf, endereco)
 
         if sucesso:
             print(f"Cliente {nome} cadastrado com sucesso!")
@@ -156,22 +164,52 @@ class InterfaceEcommerce:
 
         local_entrega = input("Digite o local de entrega: ")
         data = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        status = "Pendente"
 
-        sucesso = self.venda_dao.inserir(local_entrega, data, self.usuario_logado.id, status)
+        id = uuid.uuid4().int % (2**31 - 1)
+        pokemon_vendas = [(item["pokemon"].id, item["quantidade"]) for item in self.carrinho]
+
+        sucesso = self.venda_dao.inserir(id, local_entrega, data, self.usuario_logado.id, pokemon_vendas)
         if sucesso:
             print("Compra realizada com sucesso!")
-            self.carrinho = []  # Esvazia o carrinho
+            self.carrinho = []
         else:
             print("Erro ao finalizar compra.")
 
     def exibir_feed_publicacoes(self):
+        print("\nFeed de Publicações:")
         publicacoes = self.publicacaoDAO.listarTodas()
-        for pub in publicacoes:
-            print(f"{pub.data} - {pub.texto} (por Cliente {pub.cliente_id})")
+        if not publicacoes:
+            print("Nenhuma publicação encontrada.")
+        else:
+            for pub in publicacoes:
+                print(f"{pub.data} - {pub.texto} (por Cliente {pub.cliente_id})")
+                comentarios = self.comentarioPublicacaoDAO.listar(pub.id)
+                if comentarios:
+                    for comentario in comentarios:
+                        print(f"  Comentário: {comentario.texto} (por Cliente {comentario.cliente_id})")
+                else:
+                    print("  Nenhum comentário nesta publicação.")
 
-    def adicionar_publicacao(self, data, texto, foto, cliente_id):
-        return self.publicacaoDAO.inserir(data, texto, foto, cliente_id)
+    def adicionar_publicacao_menu(self):
+        if not self.usuario_logado:
+            print("Você precisa estar logado para publicar.")
+            return
+
+        print("\nAdicionando uma nova publicação...")
+        texto = input("Digite o texto da publicação: ")
+        foto = input("Digite o link para a foto (ou deixe em branco): ")
+        data = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        cliente_id = self.usuario_logado.id
+
+        id = uuid.uuid4().int % (2**31 - 1)
+        sucesso = self.adicionar_publicacao(id, data, texto, foto, cliente_id)
+        if sucesso:
+            print("Publicação realizada com sucesso!")
+        else:
+            print("Erro ao realizar a publicação.")
+
+    def adicionar_publicacao(self, id, data, texto, foto, cliente_id):
+        return self.publicacaoDAO.inserir(id, data, texto, foto, cliente_id)
 
     def adicionar_comentario_publicacao(self, data, texto, cliente_id, publicacao_id):
         return self.comentarioPublicacaoDAO.inserir(data, texto, cliente_id, publicacao_id)

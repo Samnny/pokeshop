@@ -1,6 +1,6 @@
 import traceback
 import psycopg2
-from models import Publicacao
+from models.Publicacao import Publicacao
 
 class PublicacaoDAO(object):
 
@@ -51,13 +51,13 @@ class PublicacaoDAO(object):
                 connection.close()
         return p
 
-    def inserir(self, data, texto, foto, cliente_id):
+    def inserir(self, id, data, texto, foto, cliente_id):
         sucesso = False
         try:
             connection = psycopg2.connect(user="postgres", password="123",
                                           host="localhost", port="5432", database="pokemon")
             cursor = connection.cursor()
-            cursor.execute("INSERT INTO publicacao (data, texto, foto, cliente_id) VALUES ('{}', '{}', '{}', {})".format(data, texto, foto, cliente_id))
+            cursor.execute("INSERT INTO publicacao (id, data, texto, foto, cliente_id) VALUES ('{}', '{}', '{}', '{}', {})".format(id, data, texto, foto, cliente_id))
             connection.commit()
             if cursor.rowcount == 1:
                 sucesso = True

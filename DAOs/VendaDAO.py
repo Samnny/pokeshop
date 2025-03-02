@@ -51,16 +51,29 @@ class VendaDAO(object):
                 connection.close()
         return v
 
-    def inserir(self, local_de_entrega, data, cliente_id, status):
+    def inserir(self, id, local_de_entrega, data, cliente_id, pokemon_vendas):
         sucesso = False
         try:
             connection = psycopg2.connect(user="postgres", password="123",
                                           host="localhost", port="5432", database="pokemon")
             cursor = connection.cursor()
-            cursor.execute("INSERT INTO venda (local_de_entrega, data, cliente_id, status) VALUES ('{}', '{}', {}, '{}')".format(local_de_entrega, data, cliente_id, status))
+
+            cursor.execute(
+                "INSERT INTO venda (id, local_de_entrega, data, cliente_id) VALUES (%s, %s, %s, %s) RETURNING id",
+                (id, local_de_entrega, data, cliente_id)
+            )
+            venda_id = cursor.fetchone()[0]
             connection.commit()
-            if cursor.rowcount == 1:
-                sucesso = True
+
+            for pokemon_id, quantidade in pokemon_vendas:
+                cursor.execute(
+                    "INSERT INTO ter (pokemon_id, venda_id, quantidade) VALUES (%s, %s, %s)",
+                    (pokemon_id, venda_id, quantidade)
+                )
+
+            connection.commit()
+
+            sucesso = True
         except (Exception, psycopg2.Error) as error:
             traceback.print_exc()
         finally:

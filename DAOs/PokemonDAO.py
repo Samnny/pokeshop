@@ -1,6 +1,6 @@
 import traceback
 import psycopg2
-from models import Pokemon
+from models.Pokemon import Pokemon
 
 class PokemonDAO(object):
 

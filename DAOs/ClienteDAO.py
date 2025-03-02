@@ -1,6 +1,6 @@
 import traceback
 import psycopg2
-from models import Cliente
+from models.Cliente import Cliente
 
 class ClienteDAO(object):
 
@@ -49,13 +49,13 @@ class ClienteDAO(object):
                 connection.close()
         return c
 
-    def inserir(self, nome, cpf, endereco):
+    def inserir(self, id, nome, cpf, endereco):
         sucesso = False
         try:
             connection = psycopg2.connect(user="postgres", password="123",
                                           host="localhost", port="5432", database="pokemon")
             cursor = connection.cursor()
-            cursor.execute("INSERT INTO cliente (nome, cpf, endereco) VALUES ('{}', '{}', '{}')".format(nome, cpf, endereco))
+            cursor.execute("INSERT INTO cliente (id, nome, cpf, endereco) VALUES ('{}', '{}', '{}', '{}')".format(id, nome, cpf, endereco))
             connection.commit()
             if cursor.rowcount == 1:
                 sucesso = True
@@ -102,3 +102,32 @@ class ClienteDAO(object):
                 cursor.close()
                 connection.close()
         return sucesso
+
+    def verificar_cliente(self, email, senha):
+        cliente = None
+        connection = None
+        cursor = None
+        try:
+            connection = psycopg2.connect(user="postgres", password="123",
+                                          host="localhost", port="5432", database="pokemon")
+            cursor = connection.cursor()
+
+            query = "SELECT id, nome, cpf, endereco FROM cliente WHERE email = %s AND senha = %s"
+            cursor.execute(query, (email, senha))
+
+            row = cursor.fetchone()
+
+            if row:
+                cliente = Cliente()
+                cliente.id = row[0]
+                cliente.nome = row[1]
+                cliente.cpf = row[2]
+                cliente.endereco = row[3]
+
+        except (Exception, psycopg2.Error) as error:
+            traceback.print_exc()
+        finally:
+            if connection:
+                cursor.close()
+                connection.close()
+        return cliente
